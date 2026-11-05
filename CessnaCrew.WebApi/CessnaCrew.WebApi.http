@@ -1,0 +1,6 @@
+@CessnaCrew.WebApi_HostAddress = http://localhost:5136
+
+GET {{CessnaCrew.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
