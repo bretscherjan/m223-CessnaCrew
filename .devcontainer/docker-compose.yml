@@ -1,0 +1,77 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VARIANT: 10.0-noble
+
+    volumes:
+      - ..:/workspace:cached
+
+    # Overrides default command so things don't shut down after the process ends.
+    command: sleep infinity
+
+    # Runs app on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
+    network_mode: service:db
+    depends_on:
+      db:
+        condition: service_healthy
+
+    # Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+    # user: root
+
+    # Use "forwardPorts" in **devcontainer.json** to forward an app port locally.
+    # (Adding the "ports" property to this file will not forward from a Codespace.)
+
+  frontend:
+    image: node:22-bookworm-slim
+    working_dir: /workspace/CessnaCrew.Web.App/ClientApp
+    volumes:
+      - ..:/workspace:cached
+      # node_modules bleibt im Container (Linux-Binaries), getrennt vom Windows-Host.
+      - clientapp-node-modules:/workspace/CessnaCrew.Web.App/ClientApp/node_modules
+    command: sh -c "npm ci && npm run dev"
+    environment:
+      # Backend läuft im app-Container, teilt sich aber das Netzwerk des db-Services.
+      API_URL: http://localhost:5136
+      # Bind-Mounts von Windows liefern keine Datei-Events, Vite muss pollen.
+      VITE_USE_POLLING: "true"
+    restart: unless-stopped
+    # Gleiches Netzwerk wie db und app, Port 5173 wird über devcontainer.json weitergeleitet.
+    network_mode: service:db
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:18.6
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+    # Add "forwardPorts": ["5432"] to **devcontainer.json** to forward PostgreSQL locally.
+    # (Adding the "ports" property to this file will not forward from a Codespace.)
+
+  pgadmin:
+    image: dpage/pgadmin4:9.18
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: zli@example.com
+      PGADMIN_DEFAULT_PASSWORD: zli*123
+
+volumes:
+  postgres-data:
+  clientapp-node-modules:

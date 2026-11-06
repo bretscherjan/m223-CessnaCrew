@@ -1,6 +1,136 @@
-@CessnaCrew.WebApi_HostAddress = http://localhost:5136
+@host = http://localhost:5136
 
-GET {{CessnaCrew.WebApi_HostAddress}}/weatherforecast/
-Accept: application/json
+### ---------- 1 Benutzerverwaltung ----------
+
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "kapitaen.anna",
+  "email": "anna@cessnacrew.ch",
+  "password": "Segeln2026!",
+  "role": "Owner"
+}
+
+###
+# @name login
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "anna@cessnacrew.ch",
+  "password": "Segeln2026!"
+}
+
+###
+@token = {{login.response.body.$.token}}
+
+GET {{host}}/api/users/me
+Authorization: Bearer {{token}}
+
+###
+GET {{host}}/api/users?role=Owner
+Authorization: Bearer {{token}}
+
+### ---------- 2 Belegungskalender & Törnplanung ----------
+
+# @name createTurn
+POST {{host}}/api/turns
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Sommertörn Bodensee",
+  "startDateTime": "2026-07-01T10:00:00",
+  "endDateTime": "2026-07-05T18:00:00",
+  "type": "Private"
+}
+
+###
+@turnId = {{createTurn.response.body.$.id}}
+
+GET {{host}}/api/turns?from=2026-07-01&to=2026-08-01
+Authorization: Bearer {{token}}
+
+###
+GET {{host}}/api/turns/{{turnId}}
+Authorization: Bearer {{token}}
+
+###
+GET {{host}}/api/turns/history?year=2026
+Authorization: Bearer {{token}}
+
+### ---------- 4 Crew & Einladungen ----------
+
+# @name invite
+POST {{host}}/api/turns/{{turnId}}/invite-token
+Authorization: Bearer {{token}}
+
+###
+GET {{host}}/api/invites/{{invite.response.body.$.token}}
+
+###
+# @name join
+POST {{host}}/api/invites/{{invite.response.body.$.token}}/join
+Content-Type: application/json
+
+{
+  "displayName": "Gast Gustav"
+}
+
+### ---------- 5 Logbuch (als Gast) ----------
+
+POST {{host}}/api/turns/{{turnId}}/logbook/rows
+Authorization: Bearer {{join.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "loggedAt": "2026-07-01T12:00:00",
+  "latitude": 47.6532,
+  "longitude": 9.1754,
+  "windForceBft": 4,
+  "windDirection": "SW",
+  "airPressureHpa": 1013,
+  "sailConfiguration": "Gross + Genua",
+  "remarks": "Ablegen Konstanz"
+}
+
+###
+GET {{host}}/api/turns/{{turnId}}/logbook
+Authorization: Bearer {{token}}
+
+###
+GET {{host}}/api/weather?lat=47.65&lon=9.18
+Authorization: Bearer {{token}}
+
+###
+POST {{host}}/api/turns/{{turnId}}/complete
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "engineHoursEnd": 125.5
+}
+
+### ---------- 6 Kosten-Splitter & Jahresbilanz ----------
+
+POST {{host}}/api/invoices
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Liegeplatz 2026",
+  "totalAmount": 1800.00,
+  "invoiceDate": "2026-03-01",
+  "shares": null
+}
+
+###
+GET {{host}}/api/invoices?year=2026
+Authorization: Bearer {{token}}
+
+###
+GET {{host}}/api/balance/2026
+Authorization: Bearer {{token}}
 
 ###

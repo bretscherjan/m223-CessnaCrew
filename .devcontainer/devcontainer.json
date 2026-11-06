@@ -1,0 +1,27 @@
+{
+  "name": "CessnaCrew .NET",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "runServices": ["app", "frontend", "db", "pgadmin"],
+  "workspaceFolder": "/workspace",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csdevkit",
+        "theumletteam.umlet"
+      ]
+    }
+  },
+  "forwardPorts": [5136, 5173],
+  "portsAttributes": {
+    "5136": { "label": "Backend (.NET API)" },
+    "5173": { "label": "Frontend (Vite)" }
+  },
+  "postCreateCommand": "dotnet restore",
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "version": "latest"
+    }
+  }
+}
